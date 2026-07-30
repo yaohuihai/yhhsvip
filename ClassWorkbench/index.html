@@ -120,7 +120,8 @@ body{
   transition:all .2s;border-radius:10px;
   -webkit-tap-highlight-color:transparent;
 }
-.mobile-nav-item .mi{font-size:22px;line-height:1;transition:transform .2s}
+.mobile-nav-item .mi{font-size:14px;line-height:1;transition:transform .2s;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:7px;background:var(--mint-50);color:var(--mint-700);font-weight:700}
+.mobile-nav-item.active .mi{background:var(--mint-100);color:var(--mint-600)}
 .mobile-nav-item:active{transform:scale(.92)}
 .mobile-nav-item.active{color:var(--mint-600)}
 .mobile-nav-item.active .mi{transform:translateY(-2px)}
@@ -701,8 +702,9 @@ body.dark-mode .sidebar-overlay{background:rgba(0,0,0,.55)}
   .toast{left:12px;right:12px;bottom:90px;max-width:none}
   /* 系统菜单 */
   .sys-menu{bottom:calc(80px + var(--safe-bottom));right:12px;left:12px;max-width:none}
-  /* 快速笔记FAB */
-  .fab{bottom:calc(80px + var(--safe-bottom));right:14px;width:48px;height:48px}
+  /* 快速笔记FAB - 移到左下角避免遮挡底部导航 */
+  .quick-work{left:14px;right:auto;bottom:calc(80px + var(--safe-bottom))}
+  .fab{bottom:0;right:auto;width:48px;height:48px}
   /* 记录项 */
   .record-item .ri-op{flex-wrap:wrap;gap:4px}
   .record-item .ri-op button{font-size:10px;padding:4px 8px;min-height:32px}
