@@ -42,6 +42,11 @@ jobs:
           APP_PATH="ClassWorkbench.xcarchive/Products/Applications/ClassWorkbench.app"
           cp ClassWorkbench/index.html "$APP_PATH/"
           cp -R ClassWorkbench/Assets.xcassets "$APP_PATH/"
+          cp ClassWorkbench/LaunchScreen.storyboardc "$APP_PATH/" 2>/dev/null || true
+          # If storyboardc doesn't exist (compiled), copy raw storyboard
+          if [ ! -f "$APP_PATH/LaunchScreen.storyboardc" ]; then
+            cp ClassWorkbench/LaunchScreen.storyboard "$APP_PATH/"
+          fi
           echo "App contents:"
           ls -la "$APP_PATH/"
           

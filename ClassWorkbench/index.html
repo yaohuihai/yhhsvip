@@ -1120,35 +1120,41 @@ function fmt(n,d=1){ if(n==null||isNaN(n)) return '-'; return Number(n).toFixed(
 /* ====================== 数据初始化 ====================== */
 function initData(force){
   state.scheduleEditing = false;
-  if(!force && load() && state.students && state.students.length){
-    // 已有本地数据，确保结构完整
-    if(!state.classInfo) state.classInfo={name:'初三17班',grade:'初三',teacher:'',studentCount:state.students.length};
-    if(!state.violations) state.violations=[];
-    if(!state.homework) state.homework={};
-    if(!state.leaves) state.leaves=[];
-    if(!state.worklogs) state.worklogs=[];
-    if(!state.talks) state.talks=[];
-    if(!state.schedule || !state.schedule.length) initDefaultSchedule();
-    if(!state.seats || !state.seats.length) buildDefaultSeats();
-    if(!state.duty.plan || !state.duty.plan.length) buildDutyPlan();
-    return;
+  // 尝试加载本地数据
+  const hasLocal = !force && load() && state.students && state.students.length;
+  
+  if(!hasLocal){
+    // 没有本地数据 → 加载示例数据（仅首次使用）
+    state.students = JSON.parse(JSON.stringify(SAMPLE_STUDENTS));
+    state.students.forEach(s=>{
+      TEMPLATE_HEADERS.forEach(h=>{ if(!(h in s)) s[h]=''; });
+      if(!s['学号']) s['学号']='';
+      if(!s['性别']) s['性别']='';
+      if(!s['走读/住校']) s['走读/住校']='住校';
+    });
+    state.seats = [];
+    state.duty = { week: 1, plan: [] };
+    state.tasksDone = {};
+    state.violations = [];
+    state.homework = {};
+    state.leaves = [];
+    state.worklogs = [];
+    state.talks = [];
+    state.schedule = [];
   }
-  state.students = JSON.parse(JSON.stringify(SAMPLE_STUDENTS));
-  state.students.forEach(s=>{
-    TEMPLATE_HEADERS.forEach(h=>{ if(!(h in s)) s[h]=''; });
-    if(!s['学号']) s['学号']='';
-    if(!s['性别']) s['性别']='';
-    if(!s['走读/住校']) s['走读/住校']='住校';
-  });
-  if(!state.classInfo) state.classInfo={name:'初三17班',grade:'初三',teacher:'',studentCount:state.students.length};
+  
+  // 确保结构完整
+  if(!state.classInfo || !state.classInfo.name) state.classInfo={name:'初三17班',grade:'初三',teacher:'',studentCount:state.students.length};
   if(!state.violations) state.violations=[];
   if(!state.homework) state.homework={};
   if(!state.leaves) state.leaves=[];
   if(!state.worklogs) state.worklogs=[];
   if(!state.talks) state.talks=[];
   if(!state.schedule || !state.schedule.length) initDefaultSchedule();
-  buildDefaultSeats();
-  buildDutyPlan();
+  if(!state.seats) state.seats=[];
+  if(state.students.length && (!state.seats.length)) buildDefaultSeats();
+  if(state.students.length && (!state.duty.plan || !state.duty.plan.length)) buildDutyPlan();
+  if(hasLocal) return;
   save();
 }
 

@@ -22,6 +22,7 @@ targets:
     resources:
       - path: ClassWorkbench/index.html
       - path: ClassWorkbench/Assets.xcassets
+      - path: ClassWorkbench/LaunchScreen.storyboard
     settings:
       base:
         INFOPLIST_FILE: ClassWorkbench/Info.plist
