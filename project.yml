@@ -17,10 +17,7 @@ targets:
     platform: iOS
     sources:
       - path: ClassWorkbench
-        excludes:
-          - "**/*.storyboard"
-          - "**/*.plist"
-          - "**/*.html"
+        type: group
     resources:
       - path: ClassWorkbench/LaunchScreen.storyboard
       - path: ClassWorkbench/index.html
