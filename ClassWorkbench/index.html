@@ -785,9 +785,9 @@ body.dark-mode .sidebar-overlay{background:rgba(0,0,0,.55)}
   <section class="page active" id="page-home">
     <div class="hero">
       <div class="hero-left">
-        <div class="greet" id="greet">老师好，欢迎回到班级管理工作台 👋</div>
-        <h2>初三17班 · 中考成绩管理</h2>
-        <p class="sub">这里汇集了常规工作与特色工作两大模块，帮助班主任高效完成日常管理。点击下方卡片可展开查看具体任务清单与详情。</p>
+        <div class="greet" id="greet">老师好，欢迎回到班级管理工作台</div>
+        <h2 id="classTitle" style="cursor:pointer" title="点击编辑班级名称">初三17班 · 中考成绩管理</h2>
+        <p class="sub" id="classDesc" style="cursor:pointer" title="点击编辑描述">这里汇集了常规工作与特色工作两大模块，帮助班主任高效完成日常管理。点击下方卡片可展开查看具体任务清单与详情。</p>
         <div class="hero-stats" id="heroStats"></div>
       </div>
       <div class="hero-right" id="miniStats"></div>
@@ -1085,7 +1085,7 @@ let state = {
   seats: [], seatRows: 8, seatCols: 8,
   duty: { week: 1, plan: [] },
   schedule: [],
-  classInfo: {name:'初三17班',grade:'初三',teacher:'',studentCount:0},
+  classInfo: {name:'初三17班',grade:'初三',teacher:'',studentCount:0,subtitle:'中考成绩管理',desc:''},
   violations: [],     // {id,date,stuName,type,desc,level,handler}
   homework: {},       // {day: [{subj,content,done}]}
   leaves: [],         // {id,stuName,reason,startDate,endDate,status,approver}
@@ -1836,13 +1836,36 @@ function clearAllData(){
     state.leaves = [];
     state.worklogs = [];
     state.talks = [];
-    state.classInfo = {name:'初三17班',grade:'初三',teacher:'',studentCount:0};
+    state.classInfo = {name:'初三17班',grade:'初三',teacher:'',studentCount:0,subtitle:'中考成绩管理',desc:''};
     initDefaultSchedule();
     // 不要 buildDefaultSeats / buildDutyPlan，因为没有学生了
     save();
     toast('完 所有数据已清空');
     switchPage('home');
   });
+}
+
+/* ====================== 编辑班级信息 ====================== */
+function editClassInfo(){
+  const current = state.classInfo || {name:'初三17班',grade:'初三'};
+  const name = prompt('请输入班级名称（如：初三17班）：', current.name || '初三17班');
+  if(name===null) return;
+  const subtitle = prompt('请输入副标题（如：中考成绩管理）：', current.subtitle || '中考成绩管理');
+  if(subtitle===null) return;
+  const desc = prompt('请输入首页描述文字：', current.desc || '这里汇集了常规工作与特色工作两大模块，帮助班主任高效完成日常管理。点击下方卡片可展开查看具体任务清单与详情。');
+  if(desc===null) return;
+  state.classInfo = { ...current, name, subtitle, desc };
+  save();
+  updateClassDisplay();
+  toast('完 班级信息已更新');
+}
+function updateClassDisplay(){
+  const ci = state.classInfo || {};
+  const titleEl = $('#classTitle');
+  const descEl = $('#classDesc');
+  if(titleEl) titleEl.textContent = (ci.name || '初三17班') + ' · ' + (ci.subtitle || '中考成绩管理');
+  if(descEl) descEl.textContent = ci.desc || '这里汇集了常规工作与特色工作两大模块，帮助班主任高效完成日常管理。点击下方卡片可展开查看具体任务清单与详情。';
+  document.title = '班主任班级管理工作台 · ' + (ci.name || '初三17班');
 }
 
 /* ====================== 删除学生 ====================== */
@@ -2355,7 +2378,12 @@ $('#nav').addEventListener('click', e=>{
 initData(false);
 setToday();
 initTheme();
+updateClassDisplay();
 switchPage('home');
+
+// 绑定班级信息编辑点击事件
+$('#classTitle').addEventListener('click', editClassInfo);
+$('#classDesc').addEventListener('click', editClassInfo);
 </script>
 </body>
 </html>
