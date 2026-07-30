@@ -48,10 +48,9 @@ body{
   min-height:100vh;min-height:100dvh;
   -webkit-font-smoothing:antialiased;
   overflow-x:hidden;
-  padding-top:var(--safe-top);
-  padding-bottom:var(--safe-bottom);
-  padding-left:var(--safe-left);
-  padding-right:var(--safe-right);
+  /* WKWebView 中让 body 填满屏幕 */
+  padding:0;
+  margin:0;
 }
 /* ===== 侧边栏 ===== */
 .sidebar{
@@ -1496,11 +1495,11 @@ function autoSeat(){
 
 /* ====================== 值日表 ====================== */
 const DUTY_ROLES = [
-  {role:'卫生打扫', icon:'值', count:3},
-  {role:'黑板清洁', icon:'🪣', count:1},
-  {role:'垃圾清运', icon:'清', count:1},
-  {role:'门窗关锁', icon:'🚪', count:1},
-  {role:'走廊维护', icon:'🌿', count:2}
+  {role:'卫生打扫', icon:'扫', count:3},
+  {role:'黑板清洁', icon:'板', count:1},
+  {role:'垃圾清运', icon:'运', count:1},
+  {role:'门窗关锁', icon:'锁', count:1},
+  {role:'走廊维护', icon:'廊', count:2}
 ];
 const DUTY_DAYS = [
   {name:'周一', tip:'Mon'},{name:'周二', tip:'Tue'},{name:'周三', tip:'Wed'},
@@ -1819,14 +1818,24 @@ function downloadTemplate(){
 /* ====================== 清空数据 ====================== */
 function clearAllData(){
   showConfirm('⚠️ 清空数据', '确定要清空所有数据吗？<br>此操作不可恢复。<br>建议先导出备份。', ()=>{
+    // 完全清空 localStorage
     localStorage.removeItem(STORE_KEY);
-    state.students = JSON.parse(JSON.stringify(SAMPLE_STUDENTS));
-    state.students.forEach(s=>{TEMPLATE_HEADERS.forEach(h=>{if(!(h in s)) s[h]=''});});
-    state.seats=[]; state.duty={week:1,plan:[]}; state.tasksDone={};
-    state.violations=[]; state.homework=[]; state.leaves=[]; state.worklogs=[]; state.talks=[];
-    state.classInfo={grade:'初三',className:'17班',headTeacher:''};
-    initDefaultSchedule(); buildDefaultSeats(); buildDutyPlan(); save();
-    toast('完 数据已重置为示例数据'); switchPage('home');
+    // 重置所有 state 为空
+    state.students = [];
+    state.seats = [];
+    state.duty = { week: 1, plan: [] };
+    state.tasksDone = {};
+    state.violations = [];
+    state.homework = {};
+    state.leaves = [];
+    state.worklogs = [];
+    state.talks = [];
+    state.classInfo = {name:'初三17班',grade:'初三',teacher:'',studentCount:0};
+    initDefaultSchedule();
+    // 不要 buildDefaultSeats / buildDutyPlan，因为没有学生了
+    save();
+    toast('完 所有数据已清空');
+    switchPage('home');
   });
 }
 
