@@ -20,7 +20,7 @@ class ViewController: UIViewController, WKNavigationDelegate {
         webView.navigationDelegate = self
         webView.translatesAutoresizingMaskIntoConstraints = false
         webView.scrollView.bounces = false
-        webView.scrollView.contentInsetAdjustmentBehavior = .never
+        webView.scrollView.contentInsetAdjustmentBehavior = .automatic
         webView.isOpaque = false
         webView.backgroundColor = UIColor(red: 0.918, green: 0.969, blue: 0.945, alpha: 1.0)
         webView.scrollView.contentScaleFactor = UIScreen.main.scale

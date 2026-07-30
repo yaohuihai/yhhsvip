@@ -48,9 +48,10 @@ body{
   min-height:100vh;min-height:100dvh;
   -webkit-font-smoothing:antialiased;
   overflow-x:hidden;
-  /* WKWebView 中让 body 填满屏幕 */
-  padding:0;
-  margin:0;
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom);
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
 }
 /* ===== 侧边栏 ===== */
 .sidebar{
@@ -459,8 +460,10 @@ select.sel:focus{border-color:var(--mint-400)}
 .quick-work .fab{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--mint-400),var(--mint-600));color:#fff;font-size:24px;border:none;cursor:pointer;box-shadow:0 6px 20px rgba(38,138,96,.35);transition:all .3s;display:flex;align-items:center;justify-content:center}
 .quick-work .fab:hover{transform:scale(1.08);box-shadow:0 8px 28px rgba(38,138,96,.45)}
 .quick-work .fab.active{transform:rotate(45deg)}
-.quick-panel{position:absolute;right:0;bottom:68px;width:320px;background:var(--glass-strong);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:16px;display:none;animation:scalein .25s cubic-bezier(.4,0,.2,1)}
+.quick-panel{position:absolute;right:0;bottom:68px;width:320px;background:var(--glass-strong);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:16px;display:none;animation:scalein .25s cubic-bezier(.4,0,.2,1);z-index:101}
 .quick-panel.open{display:block}
+.quick-panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:99;display:none}
+.quick-panel-overlay.open{display:block}
 .quick-panel h4{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .quick-panel h4 .ico{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;background:var(--mint-100);color:var(--mint-700);font-size:12px;font-weight:700}
 .quick-panel textarea{width:100%;min-height:80px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;resize:vertical;outline:none;background:#fff}
@@ -696,6 +699,10 @@ body.dark-mode .sidebar-overlay{background:rgba(0,0,0,.55)}
   /* 快速笔记FAB - 移到左下角避免遮挡底部导航 */
   .quick-work{left:14px;right:auto;bottom:calc(80px + var(--safe-bottom))}
   .fab{bottom:0;right:auto;width:48px;height:48px}
+  /* 快速记工作面板 - 移动端全宽适配 */
+  .quick-panel{left:14px;right:14px;width:auto;bottom:calc(60px + var(--safe-bottom))}
+  .quick-panel-overlay{display:block}
+  .quick-panel-overlay.open{background:rgba(0,0,0,.25)}
   /* 记录项 */
   .record-item .ri-op{flex-wrap:wrap;gap:4px}
   .record-item .ri-op button{font-size:10px;padding:4px 8px;min-height:32px}
@@ -1045,6 +1052,7 @@ body.dark-mode .sidebar-overlay{background:rgba(0,0,0,.55)}
 </div>
 
 <!-- 快速记工作 -->
+<div class="quick-panel-overlay" id="quickPanelOverlay" onclick="toggleQuickPanel()"></div>
 <div class="quick-work">
   <div class="quick-panel" id="quickPanel">
     <h4><span class="ico">快</span>快速记工作</h4>
@@ -2285,10 +2293,10 @@ function editTalk(id){ openAddTalk(id); }
 /* ====================== 快速记工作 ====================== */
 let quickTag = '';
 function toggleQuickPanel(){
-  const panel = $('#quickPanel'), fab = $('#quickFab');
+  const panel = $('#quickPanel'), fab = $('#quickFab'), overlay = $('#quickPanelOverlay');
   const open = panel.classList.contains('open');
-  if(open){ panel.classList.remove('open'); fab.classList.remove('active'); }
-  else{ panel.classList.add('open'); fab.classList.add('active'); }
+  if(open){ panel.classList.remove('open'); fab.classList.remove('active'); overlay.classList.remove('open'); }
+  else{ panel.classList.add('open'); fab.classList.add('active'); overlay.classList.add('open'); }
 }
 function saveQuickWork(){
   const content = $('#quickContent').value.trim();
