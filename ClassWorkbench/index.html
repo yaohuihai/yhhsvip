@@ -1807,29 +1807,36 @@ function downloadTemplate(){
   const ws2 = XLSX.utils.aoa_to_sheet(notes);
   ws2['!cols']=[{wch:18},{wch:60}];
   XLSX.utils.book_append_sheet(wb, ws2, '填写说明');
-  XLSX.writeFile(wb, '学生名单导入模板.xlsx');
-  toast('已下载学生名单模板（含填写说明）');
+  // 使用 Blob 方式下载，兼容 iOS WKWebView
+  const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+  const blob = new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  downloadBlob(blob, '学生名单导入模板.xlsx');
+  toast('✅ 已下载学生名单模板（含填写说明）');
 }
 
 /* ====================== 清空数据 ====================== */
 function clearAllData(){
-  if(!confirm('⚠️ 确定要清空所有数据吗？此操作不可恢复。\\n建议先导出备份。')) return;
-  localStorage.removeItem(STORE_KEY);
-  state.students = JSON.parse(JSON.stringify(SAMPLE_STUDENTS));
-  state.students.forEach(s=>{TEMPLATE_HEADERS.forEach(h=>{if(!(h in s)) s[h]=''});});
-  state.seats=[]; state.duty={week:1,plan:[]}; state.tasksDone={};
-  initDefaultSchedule(); buildDefaultSeats(); buildDutyPlan(); save();
-  toast('数据已重置为示例数据'); switchPage('home');
+  showConfirm('⚠️ 清空数据', '确定要清空所有数据吗？<br>此操作不可恢复。<br>建议先导出备份。', ()=>{
+    localStorage.removeItem(STORE_KEY);
+    state.students = JSON.parse(JSON.stringify(SAMPLE_STUDENTS));
+    state.students.forEach(s=>{TEMPLATE_HEADERS.forEach(h=>{if(!(h in s)) s[h]=''});});
+    state.seats=[]; state.duty={week:1,plan:[]}; state.tasksDone={};
+    state.violations=[]; state.homework=[]; state.leaves=[]; state.worklogs=[]; state.talks=[];
+    state.classInfo={grade:'初三',className:'17班',headTeacher:''};
+    initDefaultSchedule(); buildDefaultSeats(); buildDutyPlan(); save();
+    toast('✅ 数据已重置为示例数据'); switchPage('home');
+  });
 }
 
 /* ====================== 删除学生 ====================== */
 function deleteStudent(name){
-  if(!confirm(`确定要删除学生「${name}」吗？此操作不可恢复。`)) return;
-  state.students = state.students.filter(s=>s['姓名']!==name);
-  buildDefaultSeats(); buildDutyPlan();
-  save(); toast(`已删除：${name}`);
-  if($('#page-roster').classList.contains('active')) renderRoster();
-  switchPage('home');
+  showConfirm('⚠️ 删除学生', `确定要删除学生「${name}」吗？<br>此操作不可恢复。`, ()=>{
+    state.students = state.students.filter(s=>s['姓名']!==name);
+    buildDefaultSeats(); buildDutyPlan();
+    save(); toast(`已删除：${name}`);
+    if($('#page-roster').classList.contains('active')) renderRoster();
+    switchPage('home');
+  });
 }
 
 /* ====================== 新增/编辑学生 ====================== */
@@ -1947,7 +1954,36 @@ function openAddViolation(id){
     </div>`;
   $('#recordModal').style.display='flex';
 }
-function closeRecordModal(){ $('#recordModal').style.display='none'; editingVioId=null; editingHwDay=null; editingLeaveId=null; editingWorklogId=null; editingTalkId=null; }
+function closeRecordModal(){
+  $('#recordModal').style.display='none';
+  editingVioId=null; editingHwDay=null; editingLeaveId=null; editingWorklogId=null; editingTalkId=null;
+  confirmCallback = null;
+}
+
+/* ====================== 星期选择器 ====================== */
+let dayPickerCallback = null;
+function showDayPicker(onPick){
+  dayPickerCallback = onPick;
+  const days = ['周一','周二','周三','周四','周五'];
+  $('#recordModalTitle').textContent = '选择星期';
+  $('#recordModalBody').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px;padding:10px 0">
+      ${days.map((d,i)=>`<button class="btn" style="width:100%;justify-content:center;padding:14px;font-size:15px" 
+        id="dayPick${i}">📅 ${d}</button>`).join('')}
+      <button class="btn ghost" style="width:100%;justify-content:center;margin-top:8px" 
+        onclick="closeRecordModal()">取消</button>
+    </div>`;
+  $('#recordModal').style.display='flex';
+  // 绑定点击事件
+  days.forEach((d,i)=>{
+    document.getElementById('dayPick'+i).addEventListener('click', ()=>{
+      closeRecordModal();
+      if(dayPickerCallback) dayPickerCallback(i);
+      dayPickerCallback = null;
+    });
+  });
+}
+
 function saveViolation(){
   const obj = {id: editingVioId || Date.now().toString(), stuName: $('#vioName').value.trim(), type: $('#vioType').value.trim(), date: $('#vioDate').value, level: $('#vioLevel').value, handler: $('#vioHandler').value.trim(), desc: $('#vioDesc').value.trim()};
   if(!obj.stuName||!obj.type){ toast('请填写学生姓名和违纪类型','warn'); return; }
@@ -1955,7 +1991,11 @@ function saveViolation(){
   else{ state.violations.push(obj); }
   closeRecordModal(); save(); renderViolation(); toast('违纪记录已保存');
 }
-function deleteViolation(id){ if(!confirm('确定删除该违纪记录？')) return; state.violations=state.violations.filter(v=>v.id!==id); save(); renderViolation(); toast('已删除'); }
+function deleteViolation(id){
+  showConfirm('删除违纪记录', '确定删除该违纪记录？', ()=>{
+    state.violations=state.violations.filter(v=>v.id!==id); save(); renderViolation(); toast('已删除');
+  });
+}
 function editViolation(id){ openAddViolation(id); }
 
 /* ====================== 作业管理 ====================== */
@@ -1989,7 +2029,11 @@ function saveHomework(){
   closeRecordModal(); save(); renderHomework(); toast('作业已布置');
 }
 function toggleHwDone(day,idx){ state.homework[day][idx].done=!state.homework[day][idx].done; save(); renderHomework(); }
-function clearHomework(){ if(!confirm('确定清空本周所有作业？')) return; state.homework={}; save(); renderHomework(); toast('已清空'); }
+function clearHomework(){
+  showConfirm('清空作业', '确定清空本周所有作业？', ()=>{
+    state.homework={}; save(); renderHomework(); toast('已清空');
+  });
+}
 
 /* ====================== 请销假 ====================== */
 function renderLeave(){
@@ -2036,7 +2080,11 @@ function saveLeave(){
 function approveLeave(id){ const l=state.leaves.find(x=>x.id===id); if(l){l.status='approved';l.approver='班主任';save();renderLeave();toast('已批准');} }
 function rejectLeave(id){ const l=state.leaves.find(x=>x.id===id); if(l){l.status='rejected';l.approver='班主任';save();renderLeave();toast('已驳回');} }
 function returnLeave(id){ const l=state.leaves.find(x=>x.id===id); if(l){l.status='returned';save();renderLeave();toast('已销假');} }
-function deleteLeave(id){ if(!confirm('确定删除？')) return; state.leaves=state.leaves.filter(l=>l.id!==id); save(); renderLeave(); toast('已删除'); }
+function deleteLeave(id){
+  showConfirm('删除请假', '确定删除该请假记录？', ()=>{
+    state.leaves=state.leaves.filter(l=>l.id!==id); save(); renderLeave(); toast('已删除');
+  });
+}
 
 /* ====================== 工作留痕 ====================== */
 function renderWorklog(){
@@ -2071,7 +2119,11 @@ function saveWorklog(){
   else{ state.worklogs.push(obj); }
   closeRecordModal(); save(); renderWorklog(); toast('工作记录已保存');
 }
-function deleteWorklog(id){ if(!confirm('确定删除？')) return; state.worklogs=state.worklogs.filter(w=>w.id!==id); save(); renderWorklog(); toast('已删除'); }
+function deleteWorklog(id){
+  showConfirm('删除记录', '确定删除该工作记录？', ()=>{
+    state.worklogs=state.worklogs.filter(w=>w.id!==id); save(); renderWorklog(); toast('已删除');
+  });
+}
 function editWorklog(id){ openAddWorklog(id); }
 
 /* ====================== 谈话记录 ====================== */
@@ -2106,7 +2158,11 @@ function saveTalk(){
   else{ state.talks.push(obj); }
   closeRecordModal(); save(); renderTalk(); toast('谈话记录已保存');
 }
-function deleteTalk(id){ if(!confirm('确定删除？')) return; state.talks=state.talks.filter(t=>t.id!==id); save(); renderTalk(); toast('已删除'); }
+function deleteTalk(id){
+  showConfirm('删除记录', '确定删除该谈话记录？', ()=>{
+    state.talks=state.talks.filter(t=>t.id!==id); save(); renderTalk(); toast('已删除');
+  });
+}
 function editTalk(id){ openAddTalk(id); }
 
 /* ====================== 快速记工作 ====================== */
@@ -2160,12 +2216,9 @@ function initTheme(){ if(localStorage.getItem('wb_darkMode')==='1') toggleTheme(
 
 function exportData(){
   if(!state.students.length){ toast('暂无数据可导出','warn'); return; }
-  // 导出现有数据（所有字段）
   const allKeys = getAllFields();
-  const rows = [TEMPLATE_HEADERS.map(h=>h)]; // 先放模板表头
-  // 实际列顺序：先模板14列，再成绩列
   const finalHeaders = [...TEMPLATE_HEADERS, ...SCORE_HEADERS.filter(h=>allKeys.includes(h))];
-  rows[0] = finalHeaders;
+  const rows = [finalHeaders];
   state.students.forEach(s=>{
     rows.push(finalHeaders.map(h=>{
       const v = s[h];
@@ -2178,8 +2231,11 @@ function exportData(){
   ws['!cols'] = finalHeaders.map(()=>({wch:14}));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '学生名单');
-  XLSX.writeFile(wb, `班级数据_${new Date().toISOString().slice(0,10)}.xlsx`);
-  toast('已导出 Excel（含名单+成绩）');
+  // Blob 下载，兼容 iOS WKWebView
+  const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+  const blob = new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  downloadBlob(blob, `班级数据_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('✅ 已导出 Excel（含名单+成绩）');
 }
 
 function setToday(){
@@ -2217,10 +2273,13 @@ $('#saveRecordBtn').addEventListener('click', ()=>{
   else if(editingTalkId!==null) saveTalk();
 });
 $('#recordModal').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeRecordModal(); });
+// recordModal 的取消按钮和关闭按钮也由 closeRecordModal 统一处理
 
 $('#addHwBtn').addEventListener('click', ()=>{
-  const day = prompt('选择星期几布置作业？\n1=周一 2=周二 3=周三 4=周四 5=周五');
-  if(day&&'12345'.includes(day)) openAddHomework(HW_DAYS[+day-1]);
+  // 用自定义弹窗选择星期
+  showDayPicker((dayIdx)=>{
+    if(dayIdx!==null) openAddHomework(HW_DAYS[dayIdx]);
+  });
 });
 $('#clearHwBtn').addEventListener('click', clearHomework);
 
