@@ -56,7 +56,6 @@ body{
 .sidebar{
   position:fixed;left:0;top:0;bottom:0;width:var(--side-w);z-index:50;
   background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(240,250,246,.94));
-  -webkit-
   border-right:1px solid var(--line);
   display:flex;flex-direction:column;
   padding:22px 16px 16px;
@@ -104,7 +103,6 @@ body{
   display:none;
   position:fixed;bottom:0;left:0;right:0;z-index:60;
   background:rgba(255,255,255,.94);
-  -webkit-
   border-top:1px solid var(--line);
   padding:6px 4px calc(6px + var(--safe-bottom));
   box-shadow:0 -4px 20px rgba(0,0,0,.06);
@@ -173,7 +171,6 @@ body{
 /* ===== 卡片通用 ===== */
 .card{
   background:var(--glass-strong);
-  -webkit-
   border:1px solid rgba(255,255,255,.6);
   border-radius:var(--radius);
   box-shadow:var(--shadow);
@@ -753,7 +750,7 @@ body.dark-mode .sidebar-overlay{background:rgba(0,0,0,.55)}
 </aside>
 
 <!-- 汉堡菜单按钮(手机) -->
-<button class="menu-toggle" id="menuToggle" aria-label="菜单">☰</button>
+<button class="menu-toggle" id="menuToggle" aria-label="菜单">菜</button>
 <!-- 侧边栏遮罩(手机) -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <!-- 移动端底部导航 -->
@@ -881,7 +878,7 @@ body.dark-mode .sidebar-overlay{background:rgba(0,0,0,.55)}
             <tbody id="scheduleBody"></tbody>
           </table>
         </div>
-        <p class="seat-tip" style="margin-top:12px">💡 提示：点击「编辑课程」后可直接<b>点击单元格修改</b>课程内容，再次点击「完成编辑」保存。</p>
+        <p class="seat-tip" style="margin-top:12px">提 提示：点击「编辑课程」后可直接<b>点击单元格修改</b>课程内容，再次点击「完成编辑」保存。</p>
       </div>
     </div>
   </section>
@@ -1007,12 +1004,12 @@ body.dark-mode .sidebar-overlay{background:rgba(0,0,0,.55)}
   <div class="modal-box">
     <div class="modal-hd">
       <h4 id="recordModalTitle">新增记录</h4>
-      <div class="modal-close" onclick="closeRecordModal()">✕</div>
+      <div class="modal-close" onclick="closeRecordModal()">关</div>
     </div>
     <div class="modal-bd" id="recordModalBody"></div>
     <div class="modal-ft">
       <button class="btn" onclick="closeRecordModal()">取消</button>
-      <button class="btn primary" id="saveRecordBtn">保存</button>
+      <button class="btn primary" id="saveRecordBtn" onclick="if(checkConfirmMode())return;if(classInfoCallback)classInfoCallback();else if(editingVioId!==null)saveViolation();else if(editingHwDay!==null)saveHomework();else if(editingLeaveId!==null)saveLeave();else if(editingWorklogId!==null)saveWorklog();else if(editingTalkId!==null)saveTalk();">保存</button>
     </div>
   </div>
 </div>
@@ -1022,7 +1019,7 @@ body.dark-mode .sidebar-overlay{background:rgba(0,0,0,.55)}
   <div class="modal-box">
     <div class="modal-hd">
       <h4 id="modalTitle">新增学生</h4>
-      <div class="modal-close" onclick="closeStudentModal()">✕</div>
+      <div class="modal-close" onclick="closeStudentModal()">关</div>
     </div>
     <div class="modal-bd" id="modalBody"></div>
     <div class="modal-ft">
@@ -1102,7 +1099,7 @@ const $$ = s => document.querySelectorAll(s);
 function toast(msg, type='ok'){
   const t = document.createElement('div');
   t.className = 'toast ' + (type==='ok'?'':type);
-  const ico = type==='err'?'⚠️':type==='warn'?'⚡':'完';
+  const ico = type==='err'?'错':type==='warn'?'警':'完';
   t.innerHTML = `<span class="ico">${ico}</span><span>${msg}</span>`;
   $('#toastWrap').appendChild(t);
   setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(40px)';setTimeout(()=>t.remove(),300)},2600);
@@ -1121,10 +1118,37 @@ function fmt(n,d=1){ if(n==null||isNaN(n)) return '-'; return Number(n).toFixed(
 function initData(force){
   state.scheduleEditing = false;
   // 尝试加载本地数据
-  const hasLocal = !force && load() && state.students && state.students.length;
+  let hasLocal = false;
+  let hasEmptyState = false;
+  if(!force){
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){
+      try{
+        const parsed = JSON.parse(raw);
+        if(parsed.students && parsed.students.length){
+          // 有数据 → 加载
+          state = Object.assign(state, parsed);
+          hasLocal = true;
+        } else {
+          // 本地有 key 但数据为空（用户清空了） → 保持空状态
+          hasEmptyState = true;
+          state.students = [];
+          state.seats = [];
+          state.duty = { week: 1, plan: [] };
+          state.tasksDone = {};
+          state.violations = [];
+          state.homework = {};
+          state.leaves = [];
+          state.worklogs = [];
+          state.talks = [];
+          state.schedule = [];
+        }
+      }catch(e){ console.warn(e); }
+    }
+  }
   
-  if(!hasLocal){
-    // 没有本地数据 → 加载示例数据（仅首次使用）
+  if(!hasLocal && !hasEmptyState){
+    // 完全没有本地数据 → 加载示例数据（首次使用）
     state.students = JSON.parse(JSON.stringify(SAMPLE_STUDENTS));
     state.students.forEach(s=>{
       TEMPLATE_HEADERS.forEach(h=>{ if(!(h in s)) s[h]=''; });
@@ -1154,7 +1178,7 @@ function initData(force){
   if(!state.seats) state.seats=[];
   if(state.students.length && (!state.seats.length)) buildDefaultSeats();
   if(state.students.length && (!state.duty.plan || !state.duty.plan.length)) buildDutyPlan();
-  if(hasLocal) return;
+  if(hasLocal || hasEmptyState) return;
   save();
 }
 
@@ -1218,7 +1242,7 @@ function renderHome(){
   $('#miniStats').innerHTML = `
     <div class="mini-stat"><div class="ic a">作</div><div><div class="v">${subjects.length}</div><div class="l">考试科目数</div></div></div>
     <div class="mini-stat"><div class="ic b">名</div><div><div class="v">${topStudent().name}</div><div class="l">总分第一 · ${fmt(topStudent().score,1)}</div></div></div>
-    <div class="mini-stat"><div class="ic c">⭐</div><div><div class="v">${subjAvg[0]?subjAvg[0].s:'-'}</div><div class="l">均分最高科目</div></div></div>
+    <div class="mini-stat"><div class="ic c">优</div><div><div class="v">${subjAvg[0]?subjAvg[0].s:'-'}</div><div class="l">均分最高科目</div></div></div>
     <div class="mini-stat"><div class="ic d">假</div><div><div class="v">第${state.duty.week}周</div><div class="l">本周教学周</div></div></div>
   `;
 
@@ -1259,7 +1283,7 @@ const ROUTINE_MODULES = [
     {t:'未交名单反馈', d:'课间', who:'科代表'},
     {t:'作业质量抽查', d:'每周', who:'班主任'}
   ]},
-  {id:'safety', icon:'🛡️', name:'安全教育', desc:'防溺水、交通安全、心理健康等主题班会', tag:'每周', tasks:[
+  {id:'safety', icon:'安', name:'安全教育', desc:'防溺水、交通安全、心理健康等主题班会', tag:'每周', tasks:[
     {t:'主题班会', d:'周一班会谈', who:'班主任'},
     {t:'安全平台学习', d:'每月', who:'安全委员'},
     {t:'隐患排查', d:'每周', who:'班主任'},
@@ -1271,13 +1295,13 @@ const ROUTINE_MODULES = [
     {t:'违纪谈话', d:'及时', who:'班主任'},
     {t:'周纪律小结', d:'周五', who:'班主任'}
   ]},
-  {id:'parent', icon:'👪', name:'家校沟通', desc:'家长群维护、家访、家长会筹备', tag:'每周', tasks:[
+  {id:'parent', icon:'家', name:'家校沟通', desc:'家长群维护、家访、家长会筹备', tag:'每周', tasks:[
     {t:'家长群日报', d:'每日傍晚', who:'班主任'},
     {t:'个别家长沟通', d:'每周2-3人', who:'班主任'},
     {t:'家访安排', d:'每月', who:'班主任'},
     {t:'家长会筹备', d:'每学期', who:'班主任'}
   ]},
-  {id:'health', icon:'🏃', name:'体质健康', desc:'晨跑、课间操、眼保健操、体检组织', tag:'每日', tasks:[
+  {id:'health', icon:'体', name:'体质健康', desc:'晨跑、课间操、眼保健操、体检组织', tag:'每日', tasks:[
     {t:'晨跑组织', d:'7:00', who:'体育委员'},
     {t:'课间操考勤', d:'上午大课间', who:'体育委员'},
     {t:'眼保健操', d:'上下午各1次', who:'护眼委员'},
@@ -1285,7 +1309,7 @@ const ROUTINE_MODULES = [
   ]}
 ];
 const FEATURE_MODULES = [
-  {id:'culture', icon:'🎨', name:'班级文化', desc:'班训、班徽、黑板报、文化墙建设', tag:'特色', tasks:[
+  {id:'culture', icon:'文', name:'班级文化', desc:'班训、班徽、黑板报、文化墙建设', tag:'特色', tasks:[
     {t:'班训征集', d:'9月初', who:'宣传委员'},
     {t:'黑板报更新', d:'每月1期', who:'宣传组'},
     {t:'文化墙布置', d:'每学期', who:'美术骨干'},
@@ -1297,13 +1321,13 @@ const FEATURE_MODULES = [
     {t:'社团活动跟进', d:'每周', who:'各社长'},
     {t:'社会实践', d:'寒暑假', who:'班主任'}
   ]},
-  {id:'mentor', icon:'🌱', name:'培优辅差', desc:'学优生拓展、学困生帮扶、结对子', tag:'特色', tasks:[
+  {id:'mentor', icon:'培', name:'培优辅差', desc:'学优生拓展、学困生帮扶、结对子', tag:'特色', tasks:[
     {t:'学情分析', d:'月考后', who:'班主任'},
     {t:'一对一结对', d:'学期初', who:'班主任'},
     {t:'学困生谈话', d:'每周', who:'班主任'},
     {t:'学优生拓展', d:'每周', who:'科任老师'}
   ]},
-  {id:'mental', icon:'💚', name:'心理健康', desc:'心理筛查、个别辅导、危机干预', tag:'特色', tasks:[
+  {id:'mental', icon:'心', name:'心理健康', desc:'心理筛查、个别辅导、危机干预', tag:'特色', tasks:[
     {t:'心理状态观察', d:'日常', who:'班主任'},
     {t:'个别谈心', d:'每周2-3人', who:'班主任'},
     {t:'心理班会', d:'每月', who:'心理委员'},
@@ -1340,23 +1364,23 @@ function openDetail(mod, cardEl){
   body.innerHTML = `
     <div class="dp-hd" style="margin:-18px -20px 16px">
       <h4><span>${mod.icon}</span>${mod.name} · 任务清单</h4>
-      <div class="dp-close" onclick="closeDetail()">✕</div>
+      <div class="dp-close" onclick="closeDetail()">关</div>
     </div>
     <div class="task-list">
       ${mod.tasks.map((t,i)=>`
         <div class="task-item" data-i="${i}">
           <div class="ck" onclick="toggleTask(this)"></div>
-          <div class="tx"><b>${t.t}</b><span>⏰ ${t.d}　·　👤 ${t.who}</span></div>
+          <div class="tx"><b>${t.t}</b><span>时 ${t.d}　·　人 ${t.who}</span></div>
         </div>`).join('')}
     </div>
-    <p style="margin-top:14px;font-size:12.5px;color:var(--ink-mute)">💡 提示：点击左侧方框可标记任务完成，状态保存在本地。</p>
+    <p style="margin-top:14px;font-size:12.5px;color:var(--ink-mute)">提 提示：点击左侧方框可标记任务完成，状态保存在本地。</p>
   `;
   panel.dataset.cur = mod.id;
   panel.classList.add('open');
   // 恢复已完成状态
   const done = (state.tasksDone&&state.tasksDone[mod.id])||[];
   body.querySelectorAll('.task-item').forEach((it,i)=>{
-    if(done.includes(i)){ it.classList.add('done'); it.querySelector('.ck').classList.add('done'); it.querySelector('.ck').textContent='✓' }
+    if(done.includes(i)){ it.classList.add('done'); it.querySelector('.ck').classList.add('done'); it.querySelector('.ck').textContent='完' }
   });
   panel.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -1375,7 +1399,7 @@ function toggleTask(el){
   const arr = state.tasksDone[modId];
   const pos = arr.indexOf(idx);
   if(pos>=0){ arr.splice(pos,1); item.classList.remove('done'); el.classList.remove('done'); el.textContent='' }
-  else{ arr.push(idx); item.classList.add('done'); el.classList.add('done'); el.textContent='✓' }
+  else{ arr.push(idx); item.classList.add('done'); el.classList.add('done'); el.textContent='完' }
   save();
 }
 
@@ -1823,7 +1847,7 @@ function downloadTemplate(){
 
 /* ====================== 清空数据 ====================== */
 function clearAllData(){
-  showConfirm('⚠️ 清空数据', '确定要清空所有数据吗？<br>此操作不可恢复。<br>建议先导出备份。', ()=>{
+  showConfirm('清空数据', '确定要清空所有数据吗？<br>此操作不可恢复。<br>建议先导出备份。', ()=>{
     // 完全清空 localStorage
     localStorage.removeItem(STORE_KEY);
     // 重置所有 state 为空
@@ -1848,16 +1872,28 @@ function clearAllData(){
 /* ====================== 编辑班级信息 ====================== */
 function editClassInfo(){
   const current = state.classInfo || {name:'初三17班',grade:'初三'};
-  const name = prompt('请输入班级名称（如：初三17班）：', current.name || '初三17班');
-  if(name===null) return;
-  const subtitle = prompt('请输入副标题（如：中考成绩管理）：', current.subtitle || '中考成绩管理');
-  if(subtitle===null) return;
-  const desc = prompt('请输入首页描述文字：', current.desc || '这里汇集了常规工作与特色工作两大模块，帮助班主任高效完成日常管理。点击下方卡片可展开查看具体任务清单与详情。');
-  if(desc===null) return;
-  state.classInfo = { ...current, name, subtitle, desc };
-  save();
-  updateClassDisplay();
-  toast('完 班级信息已更新');
+  showClassInfoModal(current);
+}
+
+let classInfoCallback = null;
+function showClassInfoModal(current){
+  $('#recordModalTitle').textContent = '编辑班级信息';
+  $('#recordModalBody').innerHTML = `
+    <div class="modal-field"><label>班级名称</label><input id="ciName" value="${current.name||'初三17班'}" placeholder="如：初三17班"></div>
+    <div class="modal-field"><label>副标题</label><input id="ciSubtitle" value="${current.subtitle||'中考成绩管理'}" placeholder="如：中考成绩管理"></div>
+    <div class="modal-field"><label>首页描述</label><textarea id="ciDesc" style="min-height:80px">${current.desc||'这里汇集了常规工作与特色工作两大模块，帮助班主任高效完成日常管理。点击下方卡片可展开查看具体任务清单与详情。'}</textarea></div>`;
+  $('#recordModal').style.display='flex';
+  classInfoCallback = function(){
+    const ci = state.classInfo || {};
+    state.classInfo = { ...ci,
+      name: $('#ciName').value.trim() || '初三17班',
+      subtitle: $('#ciSubtitle').value.trim() || '中考成绩管理',
+      desc: $('#ciDesc').value.trim() || ''
+    };
+    save(); updateClassDisplay();
+    toast('完 班级信息已更新');
+    closeRecordModal(); classInfoCallback = null;
+  };
 }
 function updateClassDisplay(){
   const ci = state.classInfo || {};
@@ -1870,7 +1906,7 @@ function updateClassDisplay(){
 
 /* ====================== 删除学生 ====================== */
 function deleteStudent(name){
-  showConfirm('⚠️ 删除学生', `确定要删除学生「${name}」吗？<br>此操作不可恢复。`, ()=>{
+  showConfirm('删除学生', `确定要删除学生「${name}」吗？<br>此操作不可恢复。`, ()=>{
     state.students = state.students.filter(s=>s['姓名']!==name);
     buildDefaultSeats(); buildDutyPlan();
     save(); toast(`已删除：${name}`);
@@ -1903,7 +1939,7 @@ function openAddStudent(name){
     <div class="modal-field"><label style="color:var(--bad)">* 姓名</label><input id="stuNameInput" value="${stu?stu['姓名']:''}" placeholder="必填"></div>
     <div style="font-size:12px;color:var(--ink-mute);margin-bottom:10px;padding:8px 12px;background:var(--mint-50);border-radius:8px">册 基本信息</div>
     <div class="modal-field-grid">${fieldHtml}</div>
-    <div style="font-size:12px;color:var(--ink-mute);margin:10px 0;padding:8px 12px;background:var(--mint-50);border-radius:8px">📊 成绩信息</div>
+    <div style="font-size:12px;color:var(--ink-mute);margin:10px 0;padding:8px 12px;background:var(--mint-50);border-radius:8px">数 成绩信息</div>
     <div class="modal-field-grid">${scoreHtml}</div>`;
   $('#studentModal').style.display='flex';
 }
@@ -1972,7 +2008,7 @@ function renderViolation(){
     <div class="record-item">
       <div class="ri-hd"><div class="ri-title">${v.type} <span class="ri-tag ${v.level==='严重'?'bad':v.level==='一般'?'warn':''}">${v.level}</span></div><div class="ri-date">${v.date}</div></div>
       <div class="ri-body">${v.desc}</div>
-      <div class="ri-ft"><span class="ri-stu">👤 ${v.stuName}</span><span>处理人：${v.handler}</span>
+      <div class="ri-ft"><span class="ri-stu">人 ${v.stuName}</span><span>处理人：${v.handler}</span>
         <div class="ri-op"><button onclick="editViolation('${v.id}')">编辑</button><button class="del" onclick="deleteViolation('${v.id}')">删除</button></div>
       </div>
     </div>`).join('');
@@ -1997,7 +2033,48 @@ function openAddViolation(id){
 function closeRecordModal(){
   $('#recordModal').style.display='none';
   editingVioId=null; editingHwDay=null; editingLeaveId=null; editingWorklogId=null; editingTalkId=null;
-  confirmCallback = null;
+  // 注意：不在这里清除 confirmCallback 和 classInfoCallback
+  // 它们由各自的处理函数负责清除
+}
+
+/* ====================== 确认弹窗 ====================== */
+let confirmCallback = null;
+function showConfirm(title, message, onConfirm){
+  confirmCallback = onConfirm;
+  $('#recordModalTitle').textContent = title.replace(/[^\u4e00-\u9fa5a-zA-Z0-9 ！。，、：；？""''【】《》—…\-\+\(\)（）]/g, '');
+  $('#recordModalBody').innerHTML = `<div style="padding:10px 0;font-size:14px;line-height:1.8">${message}</div>`;
+  $('#recordModal').style.display='flex';
+  // Override save button temporarily
+  const saveBtn = $('#saveRecordBtn');
+  saveBtn.textContent = '确认';
+  saveBtn.dataset.confirmMode = '1';
+}
+// Extend saveRecordBtn click handler for confirm mode
+const origSaveRecordClick = document.getElementById('saveRecordBtn')?.onclick;
+// We'll handle this in the saveRecordBtn handler
+function checkConfirmMode(){
+  const saveBtn = $('#saveRecordBtn');
+  if(saveBtn.dataset.confirmMode === '1'){
+    saveBtn.dataset.confirmMode = '0';
+    saveBtn.textContent = '保存';
+    closeRecordModal();
+    if(confirmCallback) confirmCallback();
+    confirmCallback = null;
+    return true;
+  }
+  return false;
+}
+
+/* ====================== Blob 下载（iOS WKWebView 兼容） ====================== */
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /* ====================== 星期选择器 ====================== */
@@ -2089,7 +2166,7 @@ function renderLeave(){
     return `<div class="record-item">
       <div class="ri-hd"><div class="ri-title">${l.reason} <span class="leave-status ${l.status}">${{pending:'待审批',approved:'已批准',rejected:'已驳回',returned:'已销假'}[l.status]}</span></div><div class="ri-date">${l.startDate} ~ ${l.endDate}</div></div>
       <div class="ri-body">${l.reason}</div>
-      <div class="ri-ft"><span class="ri-stu">👤 ${l.stuName}</span><span>审批：${l.approver||'待审批'}</span>
+      <div class="ri-ft"><span class="ri-stu">人 ${l.stuName}</span><span>审批：${l.approver||'待审批'}</span>
         <div class="ri-op">
           ${statusOps}
           <button class="del" onclick="deleteLeave(${l.id})">删除</button>
@@ -2175,7 +2252,7 @@ function renderTalk(){
     <div class="record-item">
       <div class="ri-hd"><div class="ri-title">${t.topic||'谈话'} <span class="ri-tag">${t.method||'面谈'}</span></div><div class="ri-date">${t.date}</div></div>
       <div class="ri-body">${t.content}</div>
-      <div class="ri-ft"><span class="ri-stu">👤 ${t.stuName}</span><div class="ri-op"><button onclick="editTalk('${t.id}')">编辑</button><button class="del" onclick="deleteTalk('${t.id}')">删除</button></div></div>
+      <div class="ri-ft"><span class="ri-stu">人 ${t.stuName}</span><div class="ri-op"><button onclick="editTalk('${t.id}')">编辑</button><button class="del" onclick="deleteTalk('${t.id}')">删除</button></div></div>
     </div>`).join('');
 }
 let editingTalkId = null;
@@ -2238,10 +2315,7 @@ function toggleTheme(){
 function exportBackup(){
   const data = JSON.stringify(state, null, 2);
   const blob = new Blob([data], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `班级数据备份_${new Date().toISOString().slice(0,10)}.json`;
-  a.click(); URL.revokeObjectURL(url);
+  downloadBlob(blob, `班级数据备份_${new Date().toISOString().slice(0,10)}.json`);
   toast('备份已导出');
 }
 function importBackup(file){
@@ -2283,7 +2357,7 @@ function setToday(){
   const w = ['日','一','二','三','四','五','六'][d.getDay()];
   $('#todayStr').textContent = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 · 星期${w}`;
   const h = d.getHours();
-  $('#greet').textContent = (h<6?'夜深了，注意休息':h<11?'早上好，新的一天开始啦':h<14?'午安，记得小憩':h<18?'下午好，工作顺利':h<22?'晚上好，辛苦了':'夜深了，注意休息') + ' 👋';
+  $('#greet').textContent = (h<6?'夜深了，注意休息':h<11?'早上好，新的一天开始啦':h<14?'午安，记得小憩':h<18?'下午好，工作顺利':h<22?'晚上好，辛苦了':'夜深了，注意休息') + ' 好';
 }
 $('#nav').addEventListener('click', e=>{ const it=e.target.closest('.nav-item'); if(it && window.innerWidth>=768) switchPage(it.dataset.page); });
 $('#fileInput').addEventListener('change', e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); e.target.value=''; });
@@ -2305,15 +2379,10 @@ $('#studentModal').addEventListener('click', e=>{ if(e.target===e.currentTarget)
 
 // 新功能事件绑定
 $('#addVioBtn').addEventListener('click', ()=>openAddViolation(null));
-$('#saveRecordBtn').addEventListener('click', ()=>{
-  if(editingVioId!==null) saveViolation();
-  else if(editingHwDay!==null) saveHomework();
-  else if(editingLeaveId!==null) saveLeave();
-  else if(editingWorklogId!==null) saveWorklog();
-  else if(editingTalkId!==null) saveTalk();
-});
 $('#recordModal').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeRecordModal(); });
-// recordModal 的取消按钮和关闭按钮也由 closeRecordModal 统一处理
+
+// saveRecordBtn 的点击处理在 HTML onclick 中内联实现
+$('#recordModal').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeRecordModal(); });
 
 $('#addHwBtn').addEventListener('click', ()=>{
   // 用自定义弹窗选择星期
