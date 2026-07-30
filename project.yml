@@ -17,7 +17,8 @@ targets:
     platform: iOS
     sources:
       - path: ClassWorkbench
-        type: group
+        includes:
+          - "**/*.swift"
     resources:
       - path: ClassWorkbench/index.html
       - path: ClassWorkbench/Assets.xcassets
