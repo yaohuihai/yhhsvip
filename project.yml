@@ -1,0 +1,38 @@
+name: ClassWorkbench
+options:
+  bundleIdPrefix: com.classworkbench
+  deploymentTarget:
+    iOS: "15.0"
+  xcodeVersion: "15.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    CODE_SIGN_STYLE: Manual
+
+targets:
+  ClassWorkbench:
+    type: application
+    platform: iOS
+    sources:
+      - path: ClassWorkbench
+        excludes:
+          - "**/*.storyboard"
+          - "**/*.plist"
+          - "**/*.html"
+    resources:
+      - path: ClassWorkbench/LaunchScreen.storyboard
+      - path: ClassWorkbench/index.html
+      - path: ClassWorkbench/Assets.xcassets
+    settings:
+      base:
+        INFOPLIST_FILE: ClassWorkbench/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.classworkbench.app
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_IDENTITY: ""
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGNING_ALLOWED: NO
+        PROVISIONING_PROFILE_SPECIFIER: ""
+    info:
+      path: ClassWorkbench/Info.plist
