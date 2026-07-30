@@ -786,8 +786,8 @@ body.dark-mode .sidebar-overlay{background:rgba(0,0,0,.55)}
     <div class="hero">
       <div class="hero-left">
         <div class="greet" id="greet">老师好，欢迎回到班级管理工作台</div>
-        <h2 id="classTitle" style="cursor:pointer" title="点击编辑班级名称">初三17班 · 中考成绩管理</h2>
-        <p class="sub" id="classDesc" style="cursor:pointer" title="点击编辑描述">这里汇集了常规工作与特色工作两大模块，帮助班主任高效完成日常管理。点击下方卡片可展开查看具体任务清单与详情。</p>
+        <h2 id="classTitle" style="cursor:pointer" title="点击编辑班级名称" onclick="editClassInfo()">初三17班 · 中考成绩管理</h2>
+        <p class="sub" id="classDesc" style="cursor:pointer" title="点击编辑描述" onclick="editClassInfo()">这里汇集了常规工作与特色工作两大模块，帮助班主任高效完成日常管理。点击下方卡片可展开查看具体任务清单与详情。</p>
         <div class="hero-stats" id="heroStats"></div>
       </div>
       <div class="hero-right" id="miniStats"></div>
@@ -2380,10 +2380,6 @@ setToday();
 initTheme();
 updateClassDisplay();
 switchPage('home');
-
-// 绑定班级信息编辑点击事件
-$('#classTitle').addEventListener('click', editClassInfo);
-$('#classDesc').addEventListener('click', editClassInfo);
 </script>
 </body>
 </html>
