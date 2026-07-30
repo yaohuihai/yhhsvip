@@ -19,7 +19,6 @@ targets:
       - path: ClassWorkbench
         type: group
     resources:
-      - path: ClassWorkbench/LaunchScreen.storyboard
       - path: ClassWorkbench/index.html
       - path: ClassWorkbench/Assets.xcassets
     settings:
